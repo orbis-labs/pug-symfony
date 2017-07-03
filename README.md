@@ -1,23 +1,23 @@
 # Pug-Symfony
-[![Latest Stable Version](https://poser.pugx.org/pug-php/pug-symfony/v/stable.png)](https://packagist.org/packages/pug-php/pug-symfony)
-[![Build Status](https://travis-ci.org/pug-php/pug-symfony.svg?branch=master)](https://travis-ci.org/pug-php/pug-symfony)
+[![Latest Stable Version](https://poser.pugx.org/orbis-labs/pug-symfony/v/stable.png)](https://packagist.org/packages/orbis-labs/pug-symfony)
+[![Build Status](https://travis-ci.org/orbis-labs/pug-symfony.svg?branch=master)](https://travis-ci.org/pug-php/pug-symfony)
 [![StyleCI](https://styleci.io/repos/61784988/shield?style=flat)](https://styleci.io/repos/61784988)
-[![Test Coverage](https://codeclimate.com/github/pug-php/pug-symfony/badges/coverage.svg)](https://codecov.io/github/pug-php/pug-symfony?branch=master)
-[![Code Climate](https://codeclimate.com/github/pug-php/pug-symfony/badges/gpa.svg)](https://codeclimate.com/github/pug-php/pug-symfony)
+[![Test Coverage](https://codeclimate.com/github/orbis-labs/pug-symfony/badges/coverage.svg)](https://codecov.io/github/orbis-labs/pug-symfony?branch=master)
+[![Code Climate](https://codeclimate.com/github/pug-php/pug-symfony/badges/gpa.svg)](https://codeclimate.com/github/orbis-labs/pug-symfony)
 
 Pug template engine for Symfony
 
 ## Install
 In the root directory of your Symfony project, open a terminal and enter:
 ```shell
-composer require pug-php/pug-symfony
+composer require orbis-labs/pug-symfony
 ```
 
 Add in **app/config/services.yml**:
 ```yml
 services:
     templating.engine.pug:
-        class: Pug\PugSymfonyEngine
+        class: PugBundle\PugTemplateEngine
         arguments: ["@kernel"]
 ```
 
@@ -78,7 +78,7 @@ public function registerBundles()
 {
     $bundles = [
         ...
-        new Pug\PugSymfonyBundle\PugSymfonyBundle(),
+        new PugBundle\PugBundle(),
     ];
 ```
 
