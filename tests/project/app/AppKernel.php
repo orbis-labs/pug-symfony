@@ -10,7 +10,7 @@ class AppKernel extends Kernel
         $bundles = [
             new Symfony\Bundle\FrameworkBundle\FrameworkBundle(),
             new TestBundle\TestBundle(),
-            new Pug\PugSymfonyBundle\PugSymfonyBundle(),
+            new \PugBundle\PugBundle(),
         ];
 
         return $bundles;

@@ -1,6 +1,6 @@
 <?php
 
-namespace Jade\Symfony;
+namespace PugBundle\Helper;
 
 use Symfony\Bundle\FrameworkBundle\Templating\Helper\AssetsHelper;
 

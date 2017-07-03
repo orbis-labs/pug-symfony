@@ -5,12 +5,11 @@ namespace Pug\Tests;
 use Jade\Compiler;
 use Jade\Filter\AbstractFilter;
 use Jade\Nodes\Filter;
-use Jade\Symfony\JadeEngine as Jade;
-use Pug\PugSymfonyEngine;
+use Pug\Pug;
+use PugBundle\PugTemplateEngine;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Bundle\SecurityBundle\Templating\Helper\LogoutUrlHelper as BaseLogoutUrlHelper;
 use Symfony\Component\Filesystem\Filesystem;
-use Symfony\Component\HttpKernel\Kernel;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorage as BaseTokenStorage;
 use Symfony\Component\Security\Http\Logout\LogoutUrlGenerator as BaseLogoutUrlGenerator;
 
@@ -89,31 +88,22 @@ class PugSymfonyEngineTest extends KernelTestCase
 
     public function testPreRender()
     {
-        $pugSymfony = new PugSymfonyEngine(self::$kernel);
+        $pugSymfony = new PugTemplateEngine(self::$kernel);
         $code = $pugSymfony->preRender('p=asset("foo")');
 
         self::assertSame('p=$view[\'assets\']->getUrl("foo")', $code);
     }
 
-    /**
-     * @expectedException        \InvalidArgumentException
-     * @expectedExceptionMessage It seems you did not set the new settings in services.yml, please add "@kernel" to templating.engine.pug service arguments, see https://github.com/pug-php/pug-symfony#readme
-     */
-    public function testNeedKernel()
-    {
-        new PugSymfonyEngine('foo');
-    }
-
     public function testGetEngine()
     {
-        $pugSymfony = new PugSymfonyEngine(self::$kernel);
+        $pugSymfony = new PugTemplateEngine(self::$kernel);
 
-        self::assertInstanceOf(Jade::class, $pugSymfony->getEngine());
+        self::assertInstanceOf(Pug::class, $pugSymfony->getEngine());
     }
 
     public function testFallbackAppDir()
     {
-        $pugSymfony = new PugSymfonyEngine(self::$kernel);
+        $pugSymfony = new PugTemplateEngine(self::$kernel);
         $baseDir = realpath($pugSymfony->getOption('baseDir'));
         $appView = __DIR__ . '/../project/app/Resources/views';
         $srcView = __DIR__ . '/../project/src/TestBundle/Resources/views';
@@ -122,7 +112,7 @@ class PugSymfonyEngineTest extends KernelTestCase
         self::assertSame(realpath($srcView), $baseDir);
 
         rename($srcView, $srcView . '.save');
-        $pugSymfony = new PugSymfonyEngine(self::$kernel);
+        $pugSymfony = new PugTemplateEngine(self::$kernel);
         $baseDir = realpath($pugSymfony->getOption('baseDir'));
         rename($srcView . '.save', $srcView);
 
@@ -134,24 +124,15 @@ class PugSymfonyEngineTest extends KernelTestCase
     {
         $tokenStorage = new TokenStorage();
         self::$kernel->getContainer()->set('security.token_storage', $tokenStorage);
-        $pugSymfony = new PugSymfonyEngine(self::$kernel);
+        $pugSymfony = new PugTemplateEngine(self::$kernel);
 
         self::assertSame('<p>token</p>', trim($pugSymfony->render('token.pug')));
-    }
-
-    public function testLogoutHelper()
-    {
-        $logoutUrlHelper = new LogoutUrlHelper(new LogoutUrlGenerator());
-        self::$kernel->getContainer()->set('templating.helper.logout_url', $logoutUrlHelper);
-        $pugSymfony = new PugSymfonyEngine(self::$kernel);
-
-        self::assertSame('<a href="logout-url"></a><a href="logout-path"></a>', trim($pugSymfony->render('logout.pug')));
     }
 
     public function testCustomHelper()
     {
         $helper = new CustomHelper();
-        $pugSymfony = new PugSymfonyEngine(self::$kernel, $helper);
+        $pugSymfony = new PugTemplateEngine(self::$kernel, $helper);
 
         self::assertTrue(isset($pugSymfony['custom']));
         self::assertSame($helper, $pugSymfony['custom']);
@@ -172,7 +153,7 @@ class PugSymfonyEngineTest extends KernelTestCase
 
     public function testOptions()
     {
-        $pugSymfony = new PugSymfonyEngine(self::$kernel);
+        $pugSymfony = new PugTemplateEngine(self::$kernel);
 
         $message = null;
         try {
@@ -188,7 +169,7 @@ class PugSymfonyEngineTest extends KernelTestCase
 
     public function testBundleView()
     {
-        $pugSymfony = new PugSymfonyEngine(self::$kernel);
+        $pugSymfony = new PugTemplateEngine(self::$kernel);
 
         self::assertSame('<p>Hello</p>', trim($pugSymfony->render('TestBundle::bundle.pug', ['text' => 'Hello'])));
         self::assertSame('<section>World</section>', trim($pugSymfony->render('TestBundle:directory:file.pug')));
@@ -196,7 +177,7 @@ class PugSymfonyEngineTest extends KernelTestCase
 
     public function testAssetHelperPhp()
     {
-        $pugSymfony = new PugSymfonyEngine(self::$kernel);
+        $pugSymfony = new PugTemplateEngine(self::$kernel);
         $pugSymfony->setOption('expressionLanguage', 'php');
 
         self::assertSame(
@@ -214,7 +195,7 @@ class PugSymfonyEngineTest extends KernelTestCase
 
     public function testAssetHelperJs()
     {
-        $pugSymfony = new PugSymfonyEngine(self::$kernel);
+        $pugSymfony = new PugTemplateEngine(self::$kernel);
         $pugSymfony->setOption('expressionLanguage', 'js');
 
         self::assertSame(
@@ -232,7 +213,7 @@ class PugSymfonyEngineTest extends KernelTestCase
 
     public function testFilter()
     {
-        $pugSymfony = new PugSymfonyEngine(self::$kernel);
+        $pugSymfony = new PugTemplateEngine(self::$kernel);
 
         self::assertFalse($pugSymfony->hasFilter('upper'));
 
@@ -244,7 +225,7 @@ class PugSymfonyEngineTest extends KernelTestCase
 
     public function testExists()
     {
-        $pugSymfony = new PugSymfonyEngine(self::$kernel);
+        $pugSymfony = new PugTemplateEngine(self::$kernel);
 
         self::assertTrue($pugSymfony->exists('logout.pug'));
         self::assertFalse($pugSymfony->exists('login.pug'));
@@ -252,17 +233,16 @@ class PugSymfonyEngineTest extends KernelTestCase
 
     public function testSupports()
     {
-        $pugSymfony = new PugSymfonyEngine(self::$kernel);
+        $pugSymfony = new PugTemplateEngine(self::$kernel);
 
         self::assertTrue($pugSymfony->supports('foo-bar.pug'));
-        self::assertTrue($pugSymfony->supports('foo-bar.jade'));
         self::assertFalse($pugSymfony->supports('foo-bar.twig'));
         self::assertFalse($pugSymfony->supports('foo-bar'));
     }
 
     public function testCustomOptions()
     {
-        $pugSymfony = new PugSymfonyEngine(self::$kernel);
+        $pugSymfony = new PugTemplateEngine(self::$kernel);
         $pugSymfony->setOptions([
             'prettyprint' => true,
             'cache'       => null,
@@ -286,7 +266,7 @@ class PugSymfonyEngineTest extends KernelTestCase
      */
     public function testForbidThis()
     {
-        (new PugSymfonyEngine(self::$kernel))->render('p.pug', ['this' => 42]);
+        (new PugTemplateEngine(self::$kernel))->render('p.pug', ['this' => 42]);
     }
 
     /**
@@ -295,12 +275,12 @@ class PugSymfonyEngineTest extends KernelTestCase
      */
     public function testForbidView()
     {
-        (new PugSymfonyEngine(self::$kernel))->render('p.pug', ['view' => 42]);
+        (new PugTemplateEngine(self::$kernel))->render('p.pug', ['view' => 42]);
     }
 
     public function testIssue11BackgroundImage()
     {
-        $pugSymfony = new PugSymfonyEngine(self::$kernel);
+        $pugSymfony = new PugTemplateEngine(self::$kernel);
         $pugSymfony->setOption('expressionLanguage', 'js');
         $html = trim($pugSymfony->render('background-image.pug', ['image' => 'foo']));
 

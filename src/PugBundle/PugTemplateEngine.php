@@ -1,65 +1,66 @@
 <?php
 
-namespace Jade;
+namespace PugBundle;
 
-use Jade\Symfony\Css;
-use Jade\Symfony\JadeEngine as Jade;
-use Jade\Symfony\Logout;
+use Psr\Container\ContainerInterface;
 use Pug\Assets;
+use Pug\Pug;
+use PugBundle\Helper\Css;
 use Symfony\Bridge\Twig\AppVariable;
 use Symfony\Bridge\Twig\Extension\HttpFoundationExtension;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpKernel\Kernel;
 use Symfony\Component\Templating\EngineInterface;
 
-class JadeSymfonyEngine implements EngineInterface, \ArrayAccess
+class PugTemplateEngine implements EngineInterface, \ArrayAccess
 {
-    protected $container;
-    protected $jade;
+    protected $pug;
     protected $helpers;
     protected $assets;
     protected $kernel;
 
-    public function __construct($kernel)
+    public function __construct(Kernel $kernel)
     {
-        if (empty($kernel) || !($kernel instanceof Kernel)) {
-            throw new \InvalidArgumentException("It seems you did not set the new settings in services.yml, please add \"@kernel\" to templating.engine.pug service arguments, see https://github.com/pug-php/pug-symfony#readme", 1);
-        }
-
         $this->kernel = $kernel;
-        $cache = $this->getCacheDir();
+        $cache = $kernel->getCacheDir() . DIRECTORY_SEPARATOR . 'pug';
+
         if (!file_exists($cache)) {
             mkdir($cache);
         }
-        $container = $kernel->getContainer();
-        $this->container = $container;
-        $environment = $kernel->getEnvironment();
+
         $appDir = $kernel->getRootDir();
-        $rootDir = dirname($appDir);
         $assetsDirectories = [$appDir . '/Resources/assets'];
+        $environment = $kernel->getEnvironment();
+
+        $rootDir = dirname($appDir);
         $srcDir = $rootDir . '/src';
         $webDir = $rootDir . '/web';
+
         $baseDir = $this->crawlDirectories($srcDir, $appDir, $assetsDirectories);
-        $this->jade = new Jade([
+
+        $this->pug = new Pug([
             'assetDirectory'  => $assetsDirectories,
             'baseDir'         => $baseDir,
             'cache'           => substr($environment, 0, 3) === 'dev' ? false : $cache,
             'environment'     => $environment,
-            'extension'       => ['.pug', '.jade'],
+            'extension'       => ['.pug', '.pug'],
             'outputDirectory' => $webDir,
             'preRender'       => [$this, 'preRender'],
-            'prettyprint'     => $kernel->isDebug(),
+            'prettyprint'     => $kernel->isDebug()
         ]);
-        $this->registerHelpers($container, array_slice(func_get_args(), 1));
-        $this->assets = new Assets($this->jade);
+
+        $this->registerHelpers($kernel->getContainer(), array_slice(func_get_args(), 1));
+        $this->assets = new Assets($this->pug);
+
         $app = new AppVariable();
         $app->setDebug($kernel->isDebug());
         $app->setEnvironment($environment);
-        $app->setRequestStack($container->get('request_stack'));
-        if ($container->has('security.token_storage')) {
-            $app->setTokenStorage($container->get('security.token_storage'));
+        $app->setRequestStack($kernel->getContainer()->get('request_stack'));
+
+        $this->pug->share('app', $app);
+
+        if ($kernel->getContainer()->has('security.token_storage')) {
+            $app->setTokenStorage($kernel->getContainer()->get('security.token_storage'));
         }
-        $this->jade->share('app', $app);
     }
 
     protected function crawlDirectories($srcDir, $appDir, &$assetsDirectories)
@@ -130,7 +131,7 @@ class JadeSymfonyEngine implements EngineInterface, \ArrayAccess
         return $newCode;
     }
 
-    protected function registerHelpers(ContainerInterface $services, $helpers)
+   protected function registerHelpers(ContainerInterface $services, $helpers)
     {
         $this->helpers = [];
         foreach ([
@@ -154,11 +155,14 @@ class JadeSymfonyEngine implements EngineInterface, \ArrayAccess
                 $this->helpers[$helper] = $instance;
             }
         }
-        if (isset($this->helpers['logout_url'])) {
-            $this->helpers['logout'] = new Logout($this->helpers['logout_url']);
-        }
-        $this->helpers['css'] = new Css($this->helpers['assets']);
-        $this->helpers['http'] = new HttpFoundationExtension($services->get('request_stack'), $services->get('router.request_context'));
+
+        if(isset($this->helpers['assets']))
+        $this->helpers['css']  = new Css($this->helpers['assets']);
+        $this->helpers['http'] = new HttpFoundationExtension(
+            $services->get('request_stack'),
+            $services->get('router.request_context')
+        );
+
         foreach ($helpers as $helper) {
             $name = preg_replace('`^(?:.+\\\\)([^\\\\]+?)(?:Helper)?$`', '$1', get_class($helper));
             $name = strtolower(substr($name, 0, 1)) . substr($name, 1);
@@ -168,47 +172,42 @@ class JadeSymfonyEngine implements EngineInterface, \ArrayAccess
 
     public function getOption($name)
     {
-        return $this->jade->getOption($name);
+        return $this->pug->getOption($name);
     }
 
     public function setOption($name, $value)
     {
-        return $this->jade->setOption($name, $value);
+        return $this->pug->setOption($name, $value);
     }
 
     public function setOptions(array $options)
     {
-        return $this->jade->setOptions($options);
+        return $this->pug->setOptions($options);
     }
 
     public function setCustomOptions(array $options)
     {
-        return $this->jade->setCustomOptions($options);
+        return $this->pug->setCustomOptions($options);
     }
 
     public function getEngine()
     {
-        return $this->jade;
-    }
-
-    public function getCacheDir()
-    {
-        return $this->kernel->getCacheDir() . DIRECTORY_SEPARATOR . 'pug';
+        return $this->pug;
     }
 
     public function filter($name, $filter)
     {
-        return $this->jade->filter($name, $filter);
+        return $this->pug->filter($name, $filter);
     }
 
     public function hasFilter($name)
     {
-        return $this->jade->hasFilter($name);
+        return $this->pug->hasFilter($name);
     }
 
     public function getFilter($name)
     {
-        return $this->jade->getFilter($name);
+        return $this->pug->getFilter($name);
     }
 
     protected function getFileFromName($name)
@@ -240,7 +239,7 @@ class JadeSymfonyEngine implements EngineInterface, \ArrayAccess
         }
         $parameters['view'] = $this;
 
-        return $this->jade->render($this->getFileFromName($name), $parameters);
+        return $this->pug->render($this->getFileFromName($name), $parameters);
     }
 
     public function exists($name)
@@ -250,7 +249,7 @@ class JadeSymfonyEngine implements EngineInterface, \ArrayAccess
 
     public function supports($name)
     {
-        foreach ($this->jade->getExtensions() as $extension) {
+        foreach ($this->pug->getExtensions() as $extension) {
             if (substr($name, -strlen($extension)) === $extension) {
                 return true;
             }

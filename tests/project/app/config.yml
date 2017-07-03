@@ -11,5 +11,5 @@ framework:
 
 services:
     templating.engine.pug:
-        class: Pug\PugSymfonyEngine
+        class: PugBundle\PugTemplateEngine
         arguments: ["@kernel"]

@@ -1,8 +1,8 @@
 <?php
 
-namespace Jade\JadeSymfonyBundle\Command;
+namespace PugBundle\Command;
 
-use Jade\Jade;
+use Pug\Pug;
 use Symfony\Bundle\FrameworkBundle\Command\ContainerAwareCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -16,7 +16,7 @@ class AssetsPublishCommand extends ContainerAwareCommand
             ->setDescription('Export your assets in the web directory.');
     }
 
-    protected function cacheTemplates(Jade $pug)
+    protected function cacheTemplates(Pug $pug)
     {
         $success = 0;
         $errors = 0;

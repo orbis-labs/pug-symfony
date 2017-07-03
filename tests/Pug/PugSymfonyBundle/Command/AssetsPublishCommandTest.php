@@ -2,7 +2,7 @@
 
 namespace Pug\Tests\PugSymfonyBundle\Command;
 
-use Pug\PugSymfonyBundle\Command\AssetsPublishCommand;
+use PugBundle\Command\AssetsPublishCommand;
 use Symfony\Bundle\FrameworkBundle\Console\Application;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Console\Tester\CommandTester;
